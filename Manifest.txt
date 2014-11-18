@@ -1,0 +1,8 @@
+.autotest
+History.txt
+Manifest.txt
+README.txt
+Rakefile
+bin/android/dbhelper/generator
+lib/android/dbhelper/generator.rb
+test/test_android/dbhelper/generator.rb
