@@ -1,16 +1,23 @@
+//Auto generated file, don't override. Please use android_dbhelper_generator to regenerate it
+
 package <%= java_package_name %>;
 
 import android.content.ContentValues;
 import android.database.Cursor;
 import info.thinkmore.android.dbhelper.*;
+<% if date_field_exist?; %>import java.util.Date;<% end %>
 
 public class <%=java_class_name%> {
 
+    public static final String TableName = "<%= name.to_s %>";
+
     public static final String[] Columns = { <%= column_name_list %> };
 
-    public static final String CreateTableSql = "create table <%= table_name %> if not exists ( <%= columns.map{ |col| col.def_sql }.join(', ') %> );"
+    public static final String CreateTableSql = "create table <%= table_name %> ( <%= columns.map{ |col| col.def_sql }.join(', ') %> )";
 
     public static class CursorReader {
+        Cursor cursor;
+
         CursorReader(Cursor cursor){
             this.cursor = cursor;
         }
@@ -21,13 +28,11 @@ public class <%=java_class_name%> {
         ContentValues content;
 
         ContentValuesBuilder( ContentValues content ){
+            assert content != null;
             this.content = content;
-            if( this.content == null )
-                this.conent = new ContentValues;
-            }
         }
         <% columns.each do |column| %>
-        public ContentValuesBuilder <%= column.field_name %>( <%= column.field_type_name %> value ){
+        public ContentValuesBuilder <%= column.field_method_name %>( <%= column.field_type_name %> value ){
             content.put( "<%= column.column_name %>", <% if column.col_type == DateTime then; %>value.getTime()<% else %>value<% end %> );
             return this;
         }
@@ -38,8 +43,12 @@ public class <%=java_class_name%> {
         }
     }
 
-    public static ContentValuesBuilder contentBuilder(ContentValues content = null){
+    public static ContentValuesBuilder contentBuilder(ContentValues content){
         return new ContentValuesBuilder( content );
+    }
+
+    public static ContentValuesBuilder contentBuilder(){
+        return new ContentValuesBuilder( new ContentValues() );
     }
 
 

@@ -135,6 +135,16 @@ class Android::Dbhelper::Generator
       def java_class_name
           name.to_s
       end
+
+      def date_field_exist?
+          schema.columns.each do |col|
+              if col[:type] == DateTime
+                  return true
+              end
+          end
+
+          false
+      end
   end
 
   class Sqlite
