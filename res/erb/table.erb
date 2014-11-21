@@ -1,0 +1,49 @@
+package <%= java_package_name %>;
+
+import android.content.ContentValues;
+import android.database.Cursor;
+import info.thinkmore.android.dbhelper.*;
+
+public class <%=java_class_name%> {
+
+    public static final String[] Columns = { <%= column_name_list %> };
+
+    public static final String CreateTableSql = "create table <%= table_name %> if not exists ( <%= columns.map{ |col| col.def_sql }.join(', ') %> );"
+
+    public static class CursorReader {
+        CursorReader(Cursor cursor){
+            this.cursor = cursor;
+        }
+<% columns.each do |column| %><%= column.render %><% end %>
+    }
+
+    public static class ContentValuesBuilder {
+        ContentValues content;
+
+        ContentValuesBuilder( ContentValues content ){
+            this.content = content;
+            if( this.content == null )
+                this.conent = new ContentValues;
+            }
+        }
+        <% columns.each do |column| %>
+        public ContentValuesBuilder <%= column.field_name %>( <%= column.field_type_name %> value ){
+            content.put( "<%= column.column_name %>", <% if column.col_type == DateTime then; %>value.getTime()<% else %>value<% end %> );
+            return this;
+        }
+        <% end %>
+
+        public ContentValues values(){
+            return content;
+        }
+    }
+
+    public static ContentValuesBuilder contentBuilder(ContentValues content = null){
+        return new ContentValuesBuilder( content );
+    }
+
+
+    public static CursorReader cursorReader(Cursor cursor){
+        return new CursorReader( cursor );
+    }
+}

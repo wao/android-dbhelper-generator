@@ -23,6 +23,14 @@ module Android
                 GENERIC_TYPES=[String, Integer, Fixnum, Bignum, Float, Numeric, BigDecimal,
                                Date, DateTime, Time, File, TrueClass, FalseClass]
 
+                JavaType = [ :Long, :Double, :Blob, :Short, :Float ]
+
+                Long = :Long
+                Double = :Double
+                Blob = :Blob
+                Short = :Short
+                Float = :Float
+
                 OPTS = {}
 
                 # Return the column hashes created by this generator
@@ -290,6 +298,7 @@ module Android
                 end
 
                 add_type_method(*GENERIC_TYPES)
+                add_type_method(*JavaType)
             end
 
             # Alias of CreateTableGenerator for backwards compatibility.
