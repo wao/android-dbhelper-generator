@@ -1,185 +1,226 @@
 require 'android/dbhelper/schema_generator'
 require 'erb'
 require 'fileutils'
+require 'simple_assert'
+require 'android/dbhelper/relation'
+require 'android/dbhelper/column'
 
 module Android; end
 module Android::Dbhelper; end
 
 
-class Android::Dbhelper::Generator
-  VERSION = "1.0.0"
+module Android
+    module Dbhelper
+        class Generator
+            attr_reader :tables
 
-  attr_reader :tables
+            class TypeInfo
+                attr_reader :script_type, :db_type, :java_type, :type_in_name
 
-  class Column 
-      Template_Column = File.read( File.dirname( __FILE__ ) + "/../../../res/erb/table_column.erb" )
-      Render_Column = ERB.new(Template_Column)
+                def initialize( script_type, db_type, java_type, type_in_name )
+                    tm_assert{ script_type }
+                    @script_type = script_type
+                    @db_type = db_type || @script_type.to_s
+                    @java_type = java_type || @script_type.to_s
+                    @type_in_name = type_in_name || @java_type.to_s
+                end
 
-      DefOpts = { :null=>true, :primary_key=>false, :unique=>false, :index=>false }
+                INTTYPE = [ Integer, Long, Short ]
 
-      def initialize(col)
-          @col = DefOpts.merge col
-      end
-#String, Integer, Fixnum, Bignum, Float, Numeric, BigDecimal,
-                               #Date, DateTime, Time, File, TrueClass, FalseClass
-      TypeMap = { Integer=>"Integer", String=>"String", :Long=>"Long", :Double=>"Double", :Blob=>"Blob", :Float=>"Float", :Short=>"Short", DateTime=>"Date" }
+                def type_class
+                    if INTTYPE.include? @script_type
+                        :integer
+                    else
+                        if @script_type == String
+                            :string
+                        else
+                            raise "#{@script_type} doesn't support query method"
+                        end
+                    end
+                end
 
-      def field_type_name
-          raise "Unknown type %s" % @col[:type].to_s if TypeMap[@col[:type]].nil?
-          TypeMap[@col[:type]]
-      end
+                STRING_MODIFIERS = { :integer=>"%d", :string=>"\\\"%s\\\"" }
+                STRING_METHODS = { :integer=>"", :string=>"" }
 
-      def field_name
-          @col[:name].to_s.capitalize
-      end
+                def string_modifier
+                    STRING_MODIFIERS[type_class]
+                end
 
-      def field_method_name
-          @col[:name].to_s
-      end
+                def string_method
+                    STRING_METHODS[type_class] 
+                end
+            end
 
-      def column_name
-          @col[:name].to_s
-      end
+            def self.define_type( script_type, db_type = nil, java_type = nil, type_in_name = nil )
+                @type_map ||= {}
+                @type_map[ script_type ] = TypeInfo.new( script_type, db_type, java_type, type_in_name )
+            end
 
-      def render
-          Render_Column.result(binding)
-      end
+            def self.type_info( script_type )
+                ret = @type_map[ script_type ]
+                if ret.nil?
+                    byebug
+                end
 
-      def null_def
-          if @col[:null]
-              nil
-          else
-              "NOT NULL"
-          end
-      end
+                tm_assert{ ret }
+                ret
+            end
 
-      def index_def
-          if @col[:index]
-              "INDEX"
-          else
-              nil
-          end
-      end
-
-      def primary_key_def
-          if @col[:primary_key]
-              "PRIMARY KEY AUTOINCREMENT"
-          end
-      end
-
-      def default_def
-          @col[:default]
-      end
-
-      def unique_def
-          if @col[:unique]
-              "UNIQUE"
-          else
-              nil
-          end
-      end
-
-      DbTypeMap = { Integer=>"INTEGER", String=>"TEXT", :Long=>"INTEGER", :Double=>"DOUBLE", :Blob=>"BLOB", :Float=>"FLOAT", :Short=>"SMALLINT", DateTime=>"DateTime" }
-
-      def col_type
-          @col[:type]
-      end
-
-      def db_type
-          raise "Unknown type %s" % @col[:type].to_s if DbTypeMap[@col[:type]].nil?
-          DbTypeMap[@col[:type]]
-      end
+            define_type Integer, "INTEGER"
+            define_type String, "TEXT"
+            define_type Long, "INTEGER"
+            define_type Double, "DOUBLE"
+            define_type Blob, "Blob", "byte[]", "Blob"
+            define_type Float, "FLOAT"
+            define_type Short, "SMALLINT"
+            define_type DateTime, "INTEGER", "Date"
+            define_type Boolean, "SMALLINT"
 
 
-      def def_sql
-          [ "'" + column_name + "'", db_type, null_def, primary_key_def, default_def, unique_def, index_def ].reject{|e| e.nil? }.join(" ")
-      end
 
-  end
+            class Table
+                attr_reader :name, :schema, :options
+                attr_accessor :generator
 
-  Table = Struct.new( :name, :schema, :options ) do 
-      Template_Table = File.read( File.dirname( __FILE__ ) + "/../../../res/erb/table.erb" )
-      Render_Table = ERB.new(Template_Table)
+                def initialize( name, schema, options = {} )
+                    @name = name
+                    @schema = schema
+                    @options = options
+                    @relations = []
+                end
 
-      attr_reader :java_package_name
+                Template_Table = File.read( File.dirname( __FILE__ ) + "/../../../res/erb/table.erb" )
+                Render_Table = ERB.new(Template_Table)
 
-      def file_path(base_path)
-          path = base_path + "/" + @java_package_name.gsub( ".", "/" ) 
-          FileUtils.mkdir_p path
-          path
-      end
+                attr_reader :java_package_name
 
-      def generate_to( path, java_package_name, options)
-        @java_package_name = java_package_name
-        
-        File.open( file_path(path) + "/" + name.to_s + ".java", "w" ).write( dump( Render_Table.result(binding) ) )
-      end
+                def relations
+                    @schema.relations
+                end
 
-      def dump(str)
-          puts str
-          str
-      end
+                def file_path(base_path)
+                    path = base_path + "/" + @java_package_name.gsub( ".", "/" ) 
+                    FileUtils.mkdir_p path
+                    path
+                end
 
-      def table_name
-          name
-      end
+                def generate_to( path, java_package_name, options)
+                    @java_package_name = java_package_name
 
-      def columns
-          schema.columns.map { |col| Column.new(col) }      
-      end
+                    relations.each do |r|
+                        r.table = self
+                    end
 
-      def column_name_list
-          schema.columns.map { |col| '"' + col[:name].to_s + '"' }.join(',')
-      end
+                    File.open( file_path(path) + "/" + java_class_name.to_s + ".java", "w" ).write( dump( Render_Table.result(binding) ) )
+                end
 
-      def java_class_name
-          name.to_s
-      end
+                def dump(str)
+                    puts str
+                    str
+                end
 
-      def date_field_exist?
-          schema.columns.each do |col|
-              if col[:type] == DateTime
-                  return true
-              end
-          end
+                def table_name
+                    name
+                end
 
-          false
-      end
-  end
+                def columns
+                    schema.columns.map { |col| Column.new(col) }      
+                end
 
-  class Sqlite
-        def serial_primary_key_options
-            {:type=>Integer, :primary_key=>true, :auto_increment=>true}
+                def columns_has_query_method
+                    columns.select { |c| c.has_query_method? }
+                end
+
+                def column_name_list
+                    schema.columns.map { |col| '"' + col[:name].to_s + '"' }.join(',')
+                end
+
+                def java_class_name
+                    if @class_name.nil?
+                        @class_name = name.to_s 
+                        if generator.nil?
+                            byebug
+                        end
+                        if generator.classname_suffix
+                            @class_name = "#{@class_name}#{generator.classname_suffix}"
+                        end
+                    end
+
+                    @class_name
+                end
+
+                def date_field_exist?
+                    schema.columns.each do |col|
+                        if col[:type] == DateTime
+                            return true
+                        end
+                    end
+
+                    false
+                end
+
+                def many_to_many_sql( remote_table_name )
+                    remote_table = generator.get_table( remote_table_name )
+                    column_def = remote_table.columns.map{ |column| "#{remote_table.table_name}.#{column.column_name} as #{column.column_name}" }.join(",")
+                    "select #{column_def} from #{table_name}, #{remote_table_name} where #{table_name}.id = #{remote_table.table_name}.#{table_name.downcase}Id"
+                end
+            end
+
+            class Sqlite
+                def serial_primary_key_options
+                    {:type=>Integer, :primary_key=>true, :auto_increment=>true}
+                end
+            end
+
+            class EvalClass
+            end
+
+            def self.load(file_path)
+                EvalClass.instance_eval( File.read(file_path) )
+            end
+
+            attr_reader :tables
+
+            def initialize(&block)
+                @tables={}
+                @db = Sqlite.new
+                instance_exec(nil, &block)
+            end
+
+            def get_table( table_name )
+                ret = @tables[ table_name ]
+                tm_assert{ ret }
+                ret 
+            end
+
+            def self.declare(&block)
+                Android::Dbhelper::Generator.new(&block)
+            end
+
+            def classname_suffix(str=nil)
+                if str.nil?
+                    @classname_suffix
+                else
+                    @classname_suffix = str
+                    self
+                end
+            end
+
+            def create_table(name,options={},&block)
+                @tables[name] = Table.new( name, Android::Dbhelper::Schema::Generator.new(@db, &block), options )
+            end
+
+            def generate_to(path, java_package_name, options = {})
+                @tables.each_pair do |name,table|
+                    table.generator = self
+                end
+
+                @tables.each_pair do |name,table|
+                    table.generate_to( path, java_package_name, options )
+                end
+            end
         end
-  end
-
-  class EvalClass
-  end
-
-  def self.load(file_path)
-      EvalClass.instance_eval( File.read(file_path) )
-  end
-
-
-  def initialize(&block)
-      @tables={}
-      @db = Sqlite.new
-      instance_exec(nil, &block)
-  end
-
-  def self.declare(&block)
-      Android::Dbhelper::Generator.new(&block)
-  end
-
-  def create_table(name,options={},&block)
-      @tables[name] = Table.new( name, Android::Dbhelper::Schema::Generator.new(@db, &block), options )
-  end
-
-  def generate_to(path, java_package_name, options = {})
-      @tables.each_pair do |name,table|
-          table.generate_to( path, java_package_name, options )
-      end
-  end
+    end
 end
 
 module Android 

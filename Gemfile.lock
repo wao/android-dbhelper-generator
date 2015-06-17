@@ -1,0 +1,57 @@
+PATH
+  remote: .
+  specs:
+    android-dbhelper-generator (1.0.0)
+      main (> 1)
+      metaid (~> 1)
+
+GIT
+  remote: https://github.com/wao/simple-assert-ruby.git
+  revision: 2d3f825e580ecfd9045e3515ca56c35fdb905582
+  specs:
+    simple_assert (0.0.1)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    ansi (1.5.0)
+    arrayfields (4.9.2)
+    builder (3.2.2)
+    byebug (3.5.1)
+      columnize (~> 0.8)
+      debugger-linecache (~> 1.2)
+      slop (~> 3.6)
+    chronic (0.10.2)
+    columnize (0.9.0)
+    debugger-linecache (1.2.0)
+    fattr (2.2.2)
+    main (6.1.0)
+      arrayfields (>= 4.7.4)
+      chronic (>= 0.6.2)
+      fattr (>= 2.2.0)
+      map (>= 5.1.0)
+    map (6.5.5)
+    metaid (1.0)
+    minitest (5.7.0)
+    minitest-reporters (1.0.17)
+      ansi
+      builder
+      minitest (>= 5.0)
+      ruby-progressbar
+    rake (10.4.2)
+    ruby-progressbar (1.7.5)
+    shoulda-context (1.2.1)
+    slop (3.6.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  android-dbhelper-generator!
+  bundler (~> 1.7)
+  byebug (~> 3.5)
+  minitest (~> 5)
+  minitest-reporters (~> 1)
+  rake (~> 10.0)
+  shoulda-context (~> 1.2)
+  simple_assert!

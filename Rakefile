@@ -1,28 +1,15 @@
-# -*- ruby -*-
+require "bundler/gem_tasks"
+require "rake/testtask"
 
-require "rubygems"
-require "hoe"
-
-# Hoe.plugin :compiler
-# Hoe.plugin :cucumberfeatures
-# Hoe.plugin :gem_prelude_sucks
-# Hoe.plugin :inline
-# Hoe.plugin :manifest
-# Hoe.plugin :minitest
-# Hoe.plugin :newgem
-# Hoe.plugin :racc
-# Hoe.plugin :rcov
-# Hoe.plugin :rdoc
-# Hoe.plugin :website
-
-Hoe.spec "android-dbhelper-generator" do
-  # HEY! If you fill these out in ~/.hoe_template/default/Rakefile.erb then
-  # you'll never have to touch them again!
-  # (delete this comment too, of course)
-
-  # developer("FIX", "FIX@example.com")
-
-  # license "MIT" # this should match the license in the README
+Rake::TestTask.new do |t|
+    t.pattern = "test/**/*_test.rb"
 end
 
-# vim: syntax=ruby
+task 'console' do
+    $: << 'lib'
+    require 'thinwestlake/maven/pom'
+    include ThinWestLake::Maven
+    require 'irb'
+    ARGV.clear
+    IRB.start
+end

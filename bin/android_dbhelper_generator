@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'bundler/setup'
+
 $:.push File.dirname( File.realpath( __FILE__ ) ) + "/../lib"
 
 require 'android/dbhelper/generator'

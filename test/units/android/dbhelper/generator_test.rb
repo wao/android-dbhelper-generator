@@ -1,29 +1,50 @@
 #!/usr/bin/env ruby
-require 'test/unit'
+
+require_relative "../../../test_helper"
+require 'minitest/autorun'
 require 'byebug'
 require 'pp'
 
-require File.dirname(__FILE__) + "/../../test_helper.rb"
-
 require 'android/dbhelper/generator'
 
-class TestAndroidDbHelperGenerator < Test::Unit::TestCase
+class TestAndroidDbHelperGenerator < Minitest::Test
     include TestHelper
 
     def test_create_table
         base_path = setup_path( "create_table" )
 
         generator = Android::Dbhelper::Generator.declare do
+            create_table( :ParentTable ) do
+                primary_key :id
+                one_to_many :TestTable
+            end
+
             create_table( :TestTable ) do
                 primary_key :id
-                String :abcdef, :null=>false
-                Integer :intValue
+                String :abcdef, :null=>false, :has_query_method=>true
+                Integer :intValue, :has_query_method=>true
                 Float :flatValue
                 Double :doubleValue
                 DateTime :dateValue
                 Blob :blobValue
                 Short :shortValue
+
+                many_to_one :ParentTable
+
+                many_to_many :TagTable
             end
+
+            create_table( :TagTable ) do
+                primary_key :id
+                many_to_many :TestTable
+            end
+
+            create_table( :TagTableTestTable ) do
+                primary_key :id
+                Integer :tagTableId
+                Integer :testTableId 
+            end
+
         end
 
         assert !generator.tables[:TestTable].nil?
@@ -55,5 +76,8 @@ class TestAndroidDbHelperGenerator < Test::Unit::TestCase
         file_path = base_path + "/com/test/LoadTest.java" 
         generator.generate_to( base_path, "com.test" )
         assert File.exist?(file_path)
+    end
+
+    def test_classname_suffix
     end
 end

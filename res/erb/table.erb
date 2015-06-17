@@ -4,6 +4,7 @@ package <%= java_package_name %>;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import info.thinkmore.android.dbhelper.*;
 <% if date_field_exist?; %>import java.util.Date;<% end %>
 
@@ -16,23 +17,52 @@ public class <%=java_class_name%> {
     public static final String CreateTableSql = "create table <%= table_name %> ( <%= columns.map{ |col| col.def_sql }.join(', ') %> )";
 
     public static class CursorReader {
+        SQLiteDatabase db;
         Cursor cursor;
 
-        CursorReader(Cursor cursor){
+        public CursorReader(SQLiteDatabase db, Cursor cursor){
+            this.db = db;
             this.cursor = cursor;
         }
+
+        public Cursor getCursor(){
+            return cursor;
+        }
+
+        public boolean moveToNext(){
+            return cursor.moveToNext();
+        }
+
+        public CursorReader first(){
+            if( !cursor.moveToNext()){
+                throw new RuntimeException( "Cursor is empty. Can't call first" );
+            }
+            return this;
+        }
+
+
 <% columns.each do |column| %><%= column.render %><% end %>
+
+<% relations.each do |relation| %><%= relation.render %><% end %>
     }
 
     public static class ContentValuesBuilder {
         ContentValues content;
+        SQLiteDatabase db;
+        String where;
+        String[] args;
+
+        ContentValuesBuilder( SQLiteDatabase db ){
+            content = new ContentValues();
+            this.db = db;
+        }
 
         ContentValuesBuilder( ContentValues content ){
             assert content != null;
             this.content = content;
         }
         <% columns.each do |column| %>
-        public ContentValuesBuilder <%= column.field_method_name %>( <%= column.field_type_name %> value ){
+        public ContentValuesBuilder <%= column.field_method_name %>( <%= column.java_type %> value ){
             content.put( "<%= column.column_name %>", <% if column.col_type == DateTime then; %>value.getTime()<% else %>value<% end %> );
             return this;
         }
@@ -41,6 +71,28 @@ public class <%=java_class_name%> {
         public ContentValues values(){
             return content;
         }
+
+        public ContentValuesBuilder where( String value ){
+            where = value;
+            return this;
+        }
+
+        public ContentValuesBuilder args( String[] value ){
+            args = value;
+            return this;
+        }
+        
+        public long insert(){
+           return db.insert( TableName, null, content ); 
+        }
+
+        public int update(){
+            return db.update( TableName, content, where, args );
+        }
+    }
+
+    public static ContentValuesBuilder writeBuilder( SQLiteDatabase db ){
+        return new ContentValuesBuilder( db );
     }
 
     public static ContentValuesBuilder contentBuilder(ContentValues content){
@@ -52,7 +104,31 @@ public class <%=java_class_name%> {
     }
 
 
-    public static CursorReader cursorReader(Cursor cursor){
-        return new CursorReader( cursor );
+    public static CursorReader cursorReader(SQLiteDatabase db, Cursor cursor){
+        return new CursorReader( db, cursor );
+    }
+
+    public static class QueryBuilder extends QueryBuilderBase<QueryBuilder, CursorReader>{
+        public QueryBuilder( SQLiteDatabase db ){
+            super(db);
+        }
+
+        public CursorReader query(){
+            return new CursorReader( db, queryCursor() );
+        }
+
+        public CursorReader first(){
+            return query().first();
+        }
+
+        public QueryBuilder getThis(){
+            return this;
+        }
+
+<% columns_has_query_method.each do |column| %><%= column.render_query_method %><% end %>
+    }
+
+    public static QueryBuilder queryBuilder( SQLiteDatabase db ){
+        return new QueryBuilder( db ).from( TableName ).columns( Columns );
     }
 }

@@ -1,0 +1,3 @@
+        public QueryBuilder by<%= field_name %>( <%= java_type %> value ){
+            return where( String.format( " <%= column_name %> = <%= string_modifier %> ", value<%= string_method %> ) );
+        }

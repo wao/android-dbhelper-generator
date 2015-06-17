@@ -1,3 +1,7 @@
+require 'minitest/autorun'
+require 'byebug'
+require 'pp'
+
 require 'fileutils'
 
 module TestHelper

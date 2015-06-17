@@ -1,9 +1,22 @@
 require 'date' 
 require 'bigdecimal'
+require 'android/dbhelper/relation'
 
 module Android
     # The Schema module holds the schema generators.
     module Dbhelper
+        GENERIC_TYPES=[String, Integer, Fixnum, Bignum, Float, Numeric, BigDecimal,
+                       Date, DateTime, Time, File, TrueClass, FalseClass]
+
+        JavaType = [ :Long, :Double, :Blob, :Short, :Float, :Boolean ]
+
+        Long = :Long
+        Double = :Double
+        Blob = :Blob
+        Short = :Short
+        Float = :Float
+        Boolean = :Boolean
+
         module Schema
             # Schema::CreateTableGenerator is an internal class that the user is not expected
             # to instantiate directly.  Instances are created by Database#create_table.
@@ -20,16 +33,8 @@ module Android
             # the {"Schema Modification" guide}[rdoc-ref:doc/schema_modification.rdoc].
             class CreateTableGenerator
                 # Classes specifying generic types that Sequel will convert to database-specific types.
-                GENERIC_TYPES=[String, Integer, Fixnum, Bignum, Float, Numeric, BigDecimal,
-                               Date, DateTime, Time, File, TrueClass, FalseClass]
 
-                JavaType = [ :Long, :Double, :Blob, :Short, :Float ]
 
-                Long = :Long
-                Double = :Double
-                Blob = :Blob
-                Short = :Short
-                Float = :Float
 
                 OPTS = {}
 
@@ -42,6 +47,8 @@ module Android
                 # Return the index hashes created by this generator
                 attr_reader :indexes
 
+                attr_reader :relations
+
                 # Set the database in which to create the table, and evaluate the block
                 # in the context of this object.
                 def initialize(db, &block)
@@ -49,10 +56,28 @@ module Android
                     @columns = []
                     @indexes = []
                     @constraints = []
+                    @relations = []
                     @primary_key = nil
                     instance_eval(&block) if block
                     @columns.unshift(@primary_key) if @primary_key && !has_column?(primary_key_name)
                 end
+
+                def one_to_one( table_name, options={} )
+                    @relations << Relation.new( :one_to_one, table_name,  options )
+                end
+
+                def one_to_many( table_name, options={} )
+                    @relations << Relation.new( :one_to_many, table_name,  options )
+                end
+
+                def many_to_one( table_name, options={} )
+                    @relations << Relation.new( :many_to_one, table_name,  options )
+                end
+
+                def many_to_many( table_name, options={} )
+                    @relations << Relation.new( :many_to_many, table_name,  options )
+                end
+
 
                 # Add a method for each of the given types that creates a column
                 # with that type as a constant.  Types given should either already
