@@ -1,3 +1,3 @@
-        <%= remote_class_name %>.CursorReader <%= method_name %>(){
+        public <%= remote_class_name %>.CursorReader <%= method_name %>(){
             return <%= remote_class_name %>.cursorReader( db, db.rawQuery( String.format( "<%= many_to_many_sql %>", <%= id_field_name %>().get() ), null ) );
         }
