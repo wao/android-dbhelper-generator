@@ -7,3 +7,6 @@
             return field<%= field_name%>;
         }
 
+        public List<<%= java_boxed_type %>> collect<%= field_name %>(){
+            return collect( <%= field_method_name %>() );
+        }

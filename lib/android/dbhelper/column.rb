@@ -1,4 +1,5 @@
 require 'erb'
+require 'byebug'
 
 module Android
     module Dbhelper
@@ -27,6 +28,17 @@ module Android
 
             def java_type
                 type_info.java_type
+            end
+
+            def java_boxed_type
+                case type_info.script_type.to_s.to_sym
+                when :Blob
+                    "byte[]"
+                when :DateTime
+                    Date
+                else
+                    type_info.script_type
+                end
             end
 
             def field_name

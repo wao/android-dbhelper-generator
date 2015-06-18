@@ -6,6 +6,9 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import info.thinkmore.android.dbhelper.*;
+import java.util.List;
+import java.util.ArrayList;
+
 <% if date_field_exist?; %>import java.util.Date;<% end %>
 
 public class <%=java_class_name%> {
@@ -38,6 +41,15 @@ public class <%=java_class_name%> {
                 throw new RuntimeException( "Cursor is empty. Can't call first" );
             }
             return this;
+        }
+
+        public <R> List<R> collect( FieldGetter<R> fg ){
+                List<R> ret = new ArrayList<R>();
+                while( moveToNext() ){
+                    ret.add( fg.getField() );
+                }
+
+                return ret;
         }
 
 
