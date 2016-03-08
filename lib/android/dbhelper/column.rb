@@ -87,12 +87,18 @@ module Android
 
             def primary_key_def
                 if @col[:primary_key]
-                    "PRIMARY KEY AUTOINCREMENT"
+                    if @col[:type] == Integer
+                        "PRIMARY KEY AUTOINCREMENT"
+                    else
+                        "PRIMARY KEY"
+                    end
                 end
             end
 
             def default_def
-                @col[:default]
+                if !@col[:default].nil?
+                    "DEFAULT #{@col[:default]}"
+                end
             end
 
             def unique_def

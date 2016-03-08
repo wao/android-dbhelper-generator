@@ -1,3 +1,3 @@
         public <%= remote_class_name %>.CursorReader <%= method_name %>(){
-            return <%= remote_class_name %>.queryBuilder( db ).where( String.format( " <%= remote_ref_id_field_name %> = %d ", <%= id_field_name %>().get() ) ).query();
+            return <%= remote_class_name %>.queryBuilder( db ).where( String.format( " <%= remote_id_field_name %> = %d ", <%= ref_id_field_name %>().get() ) ).query();
         }

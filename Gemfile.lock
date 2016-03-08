@@ -1,15 +1,15 @@
+GIT
+  remote: https://github.com/wao/simple-assert-ruby.git
+  revision: 2d3f825e580ecfd9045e3515ca56c35fdb905582
+  specs:
+    simple_assert (0.0.1)
+
 PATH
   remote: .
   specs:
     android-dbhelper-generator (1.0.0)
       main (> 1)
       metaid (~> 1)
-
-GIT
-  remote: https://github.com/wao/simple-assert-ruby.git
-  revision: 2d3f825e580ecfd9045e3515ca56c35fdb905582
-  specs:
-    simple_assert (0.0.1)
 
 GEM
   remote: https://rubygems.org/
@@ -55,3 +55,6 @@ DEPENDENCIES
   rake (~> 10.0)
   shoulda-context (~> 1.2)
   simple_assert!
+
+BUNDLED WITH
+   1.10.6

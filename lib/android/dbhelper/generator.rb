@@ -168,7 +168,7 @@ module Android
 
             class Sqlite
                 def serial_primary_key_options
-                    {:type=>Integer, :primary_key=>true, :auto_increment=>true}
+                    {:type=>Integer, :primary_key=>true}
                 end
             end
 
